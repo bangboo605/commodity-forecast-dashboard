@@ -965,7 +965,7 @@ def render_gold_data_panel(
         committed_values = st.session_state.gold_final_values.get(context_key, {})
         with st.container(key="scenario_grid"):
             header_columns = st.columns(
-                [.65, 1, 1, 1, 1, 1, 1, 1], gap=None
+                [.65] + [1] * len(forecast_quarters), gap=None
             )
             header_columns[0].empty()
             for column, quarter in zip(header_columns[1:], forecast_quarters):
@@ -977,7 +977,7 @@ def render_gold_data_panel(
             for scenario_name in ("high", "base", "low"):
                 scenario_values = scenario_table_values[scenario_name]
                 row_columns = st.columns(
-                    [.65, 1, 1, 1, 1, 1, 1, 1], gap=None
+                    [.65] + [1] * len(forecast_quarters), gap=None
                 )
                 row_columns[0].button(
                     scenario_name,
@@ -1060,7 +1060,7 @@ def render_gold_data_panel(
         st.markdown('<div class="final-wrap"></div>', unsafe_allow_html=True)
         final_grid = st.container(key="final_grid")
         final_columns = final_grid.columns(
-            [.65, 1, 1, 1, 1, 1, 1, 1], gap=None
+            [.65] + [1] * len(forecast_quarters), gap=None
         )
         final_columns[0].markdown(
             '<div class="final-row-label{}">final</div>'.format(
@@ -2946,7 +2946,7 @@ st.markdown(
         .final-value { background:#6f9692; color:white; font-weight:750; }
         .st-key-final_grid div[data-testid="stHorizontalBlock"] {
             display:grid !important;
-            grid-template-columns:.65fr repeat(7, minmax(0, 1fr));
+            grid-template-columns:.65fr; grid-auto-columns:minmax(0, 1fr); grid-auto-flow:column;
             gap:3px !important;
         }
         .st-key-final_grid div[data-testid="stHorizontalBlock"]
