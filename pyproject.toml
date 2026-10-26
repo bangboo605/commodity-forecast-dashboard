@@ -1,16 +1,28 @@
+# uv 사용자용: uv sync   (uv.lock 과 함께 쓴다, Python 3.13)
+# requirements.txt 와 같은 목록이다. 셋 중 하나만 쓰면 된다. 패키지를 바꾸면 세 파일을 같이 고치고 uv lock 을 다시 실행할 것.
 [project]
 name = "streamlit-chart"
 version = "2.2.0"
 description = "Commodity scenario and price forecasting dashboard"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-    "altair==6.2.2",
-    "matplotlib==3.11.1",
-    "numpy==2.5.1",
-    "openpyxl==3.1.5",
-    "pandas==3.0.3",
-    "statsmodels==0.14.6",
+    # 앱 (Streamlit 대시보드)
     "streamlit==1.60.0",
+    "altair==6.2.2",
+    "openpyxl==3.1.5",
+    # 앱 + 모델 + 노트북 공통
+    "numpy==2.5.1",
+    "pandas==3.0.3",
+    "matplotlib==3.11.1",
+    "statsmodels==0.14.6",
+    # 모델 (model_selection, PI_module)
+    "arch==8.0.0",
+    "pmdarima==2.1.1",
+    "properscoring==0.1",
+    "scipy==1.18.0",
+    # 노트북 (notebooks/, PI_module/*.ipynb)
+    "scikit-learn==1.9.0",
+    "ipykernel==7.3.0",
 ]
 
 [tool.uv]

@@ -37,6 +37,7 @@ class VariableConfig:
     dD: tuple = ((0, 0), (0, 1), (1, 0), (1, 1))
     scales: tuple = ("원", "로그")                # 로그는 값이 모두 양수일 때만 쓴다
     app_column: str = ""                             # 스트림릿 시나리오 CSV의 열 이름(없으면 변수 코드)
+    initial_calib: int = 15                          # 첫 채점 origin 앞의 보정 origin 수(오차 풀 쌓기용). PI에서는 첫 origin 날짜로 정한다
 
 
 def load(cfg):
@@ -50,8 +51,9 @@ def _next_quarter(lab):
     return f"{y_ + (n_ == 4)}Q{n_ % 4 + 1}"
 
 
-def _run_one(cfg, q, y, model, d, D, logmode, prev=None, o_start=MIN_TRAIN):
-    """한 조합의 origin별 결과(원래 단위, 점수는 정규화 전). prev=(이전 결과, 체크포인트)가 있으면 o_start origin부터만 다시 계산해 이어 붙인다."""
+def _run_one(cfg, q, y, model, d, D, logmode, prev=None, o_start=MIN_TRAIN, levels=None):
+    """한 조합의 origin별 결과(원래 단위, 점수는 정규화 전). prev=(이전 결과, 체크포인트)가 있으면 o_start origin부터만 다시 계산해 이어 붙인다.
+    levels(분위수 확률 목록)를 주면 두 구간 방식 모두 행마다 '분위수'(원래 단위 배열)를 함께 돌려준다."""
     sp, std = Spec(d=d, D=D), model != "AR단독"
     unit_err = (not std) and (not logmode)                    # 모델 단위로 쌓이는 오차는 원래 단위로 저장해 둔다
     tf = (lambda x: np.exp(np.asarray(x) / SCALE)) if logmode else (lambda x: np.asarray(x))
@@ -72,7 +74,7 @@ def _run_one(cfg, q, y, model, d, D, logmode, prev=None, o_start=MIN_TRAIN):
         C = 100 / y[:o].std()                                 # 단위 상수: 그 시점까지의 훈련 구간 표준편차
         series = SCALE * np.log(y * C) if logmode else y * C
         fc, sig, src, (p, P) = forecast(model, series[:o], sp)
-        if o - MIN_TRAIN >= INITIAL_CALIB:
+        if o - MIN_TRAIN >= cfg.initial_calib:
             for h in range(1, H + 1):
                 known = o + h - 1 < n                             # 정답이 아직 없는 분기는 예측만 하고 채점하지 않는다
                 a, s_h = (y[o + h - 1] if known else np.nan), max(sig[h - 1], 1e-6)
@@ -82,12 +84,16 @@ def _run_one(cfg, q, y, model, d, D, logmode, prev=None, o_start=MIN_TRAIN):
                 q50_r = float(tf(np.quantile(samples, 0.5))) / C            # 리샘플링 분포의 50% 분위수(구간 끝 5%, 95%와 같은 분포)
                 lo_n, hi_n = tf(fc[h - 1] - Z * s_h) / C, tf(fc[h - 1] + Z * s_h) / C
                 med = float(tf(fc[h - 1])) / C
+                if levels is not None:
+                    qs_r, qs_n = tf(np.quantile(samples, levels)) / C, tf(fc[h - 1] + stats.norm.ppf(levels) * s_h) / C
                 base = {"모델": model, "d": d, "D": D, "스케일": "로그" if logmode else "원", "origin": o, "h": h, "분기": qfull[o + h - 1], "p": p, "P": P,
                         "src": src, "mse_raw": (a - med) ** 2, "중앙값": med, "실제": a, "채점": o + H <= n}
                 rows.append({**base, "구간": "리샘플링", "q50": q50_r, "하한": lo_r, "상한": hi_r, "적중": float(lo_r <= a <= hi_r) * 100 if known else np.nan,
-                             "폭_raw": hi_r - lo_r, "crps_raw": ps.crps_ensemble(a, tf(samples) / C) if known else np.nan})
+                             "폭_raw": hi_r - lo_r, "crps_raw": ps.crps_ensemble(a, tf(samples) / C) if known else np.nan,
+                             **({"분위수": qs_r} if levels is not None else {})})
                 rows.append({**base, "구간": "자체", "q50": med, "하한": lo_n, "상한": hi_n, "적중": float(lo_n <= a <= hi_n) * 100 if known else np.nan,
-                             "폭_raw": hi_n - lo_n, "crps_raw": ps.crps_ensemble(a, tf(fc[h - 1] + s_h * U) / C) if known else np.nan})
+                             "폭_raw": hi_n - lo_n, "crps_raw": ps.crps_ensemble(a, tf(fc[h - 1] + s_h * U) / C) if known else np.nan,
+                             **({"분위수": qs_n} if levels is not None else {})})
         for h in range(1, H + 1):
             if o + h - 1 < n and np.isfinite(fc[h - 1]):      # 정답이 있는 오차만, 적합 실패(NaN)는 오차 풀에 넣지 않는다
                 e = series[o + h - 1] - fc[h - 1]
@@ -101,7 +107,10 @@ CACHE_VERSION = 2          # 계산 방식(모델, 평가, 저장 형식)을 바
 
 def _cache_path(cfg):
     """설정, 시드, CACHE_VERSION이 같을 때만 같은 캐시 파일 이름이 나온다(데이터는 캐시 안에 같이 저장해 비교한다)."""
-    return CACHE_DIR / f"{cfg.code}_{hashlib.sha1(repr(asdict(cfg)).encode()).hexdigest()[:10]}_s{SEED}_v{CACHE_VERSION}.pkl"
+    d = asdict(cfg)
+    if d["initial_calib"] == 15:                                # 기본값이면 이 설정이 생기기 전과 같은 캐시 이름을 쓴다
+        d.pop("initial_calib")
+    return CACHE_DIR / f"{cfg.code}_{hashlib.sha1(repr(d).encode()).hexdigest()[:10]}_s{SEED}_v{CACHE_VERSION}.pkl"
 
 
 def _first_diff(q0, y0, q1, y1):

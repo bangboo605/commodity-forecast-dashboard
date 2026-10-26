@@ -4,6 +4,29 @@
 
 > 공개를 위해 금 주요 변수 6개의 이름은 `X1`~`X6`으로 비식별화했습니다. 데이터 값과 분석 결과는 그대로입니다.
 
+## 라이브러리 설치
+
+Python 3.13이 필요합니다. 아래 세 가지 중 **하나만** 골라 설치하면 됩니다. 세 파일 모두 같은 목록입니다.
+
+| 방법 | 쓰는 파일 | 설치 명령 |
+|---|---|---|
+| pip | `requirements.txt` | `pip install -r requirements.txt` |
+| uv (권장, 버전 완전 고정) | `pyproject.toml` + `uv.lock` | `uv sync` |
+| pyproject.toml만 | `pyproject.toml` | `uv sync` (`uv.lock`이 없으면 새로 만들어짐) |
+
+라이브러리와 용도 (버전은 세 파일에 같게 적혀 있습니다):
+
+| 용도 | 라이브러리 |
+|---|---|
+| 앱 (Streamlit 대시보드) | streamlit, altair, openpyxl |
+| 앱 + 모델 + 노트북 공통 | numpy, pandas, matplotlib, statsmodels |
+| 모델 (`model_selection/`, `PI_module/`) | arch, pmdarima, properscoring, scipy |
+| 노트북 (`notebooks/`, `PI_module/*.ipynb`) | scikit-learn, ipykernel |
+
+- 가상환경을 켠 뒤 실행하세요(uv는 `.\.venv\Scripts\Activate.ps1`). 다른 파이썬으로 실행하면 `ModuleNotFoundError`가 납니다.
+- 앱만 돌린다면 모델·노트북 라이브러리는 쓰지 않지만 함께 설치됩니다.
+- 패키지를 추가하거나 바꿀 때는 세 파일을 같이 고치고 `uv lock`으로 `uv.lock`을 갱신하세요.
+
 ## 핵심만 보기
 
 | 보고 싶은 것 | 위치 |
@@ -11,6 +34,7 @@
 | 대시보드 (현재 버전) | `item_selection_v3.8.py` |
 | 금 가격 전망 모델 (TVP 회귀) | `gold_price_model.py` |
 | 변수별 예측 모델을 고르고 시나리오 CSV를 만드는 모듈 | `model_selection/` |
+| 분기 CSV 하나로 모델을 고르고 예측 분위수와 성적표를 만드는 모듈 | `PI_module/` |
 | 모델 선정을 일반화한 분석 | `notebooks/12`, `13`, `14` |
 | 분석이 어떻게 여기까지 왔는지 | `notebooks/0` ~ `11`, `PPT/`, `VERSION_HISTORY.txt` |
 
