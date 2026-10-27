@@ -4,7 +4,7 @@
 실행:  (PI_module 폴더에서) python PI.py <CSV 이름> <첫 origin의 마지막 분기 날짜>      예) python PI.py gold_yoy 2024-01-01
 함수:  d1, d2 = run_pi("gold_yoy", "2018-12-01")
 
-- CSV: Date, Data 두 열(분기 자료). Date는 그 날짜가 속한 분기로 읽는다(2018-12-01은 2018-Q4). 이름만 주면 현재 폴더, PI_module/data/ 순으로 찾는다. 결과 CSV는 PI_module/out/에 저장한다.
+- CSV: Date, Data 두 열(분기 자료). Date는 그 날짜가 속한 분기로 읽는다(2018-12-01은 2018-Q4). 이름만 주면 현재 폴더, PI_module/data/ 순으로 찾는다. 결과는 PI_module/output/<이름>/에 저장한다.
 - 첫 origin: 입력한 날짜의 분기까지를 훈련에 쓰는 origin. 그보다 앞(최소 훈련 20분기부터)은 리샘플링 오차 풀을 쌓는 보정 구간이다.
 - 모델 선정: 지금까지와 같다. 모델 3종 x (d, D) 4가지 x 스케일 x 구간 방식을 첫 origin 이후 백테스트해서
   CRPS 1등의 +-10% 이내 중 커버리지가 90%에 가장 가까운 조합을 고른다.
@@ -150,8 +150,8 @@ if __name__ == "__main__":
     csv_name, date = (x.strip("'\"") for x in sys.argv[1:3])          # cmd처럼 작은따옴표를 글자 그대로 넘기는 터미널도 허용
     code = Path(csv_name).stem
     d1, d2 = run_pi(csv_name, date, name=code)
-    out = HERE / "out"
-    out.mkdir(exist_ok=True)
+    out = HERE / "output" / code
+    out.mkdir(parents=True, exist_ok=True)
     to_frame(d1).to_csv(out / f"{code}_forecast.csv", index=False, encoding="utf-8-sig")
     pd.DataFrame([d2]).to_csv(out / f"{code}_score.csv", index=False, encoding="utf-8-sig")
     (out / f"{code}_dict1.json").write_text(json.dumps({k: v.tolist() for k, v in d1.items()}, ensure_ascii=False), encoding="utf-8")
@@ -160,4 +160,4 @@ if __name__ == "__main__":
     print(f"딕셔너리 1: origin {len(ks)}개 ({ks[0]} ~ {ks[-1]}), 값은 9 x 4 배열(행 {LEVELS}%, 열 h1~h4). 첫 origin {ks[0]}:")
     print({ks[0]: np.round(d1[ks[0]], 2).tolist()})
     print("딕셔너리 2:", {k: round(v, 4) for k, v in d2.items()})
-    print(f"저장(PI_module/out/): {code}_dict1.json, {code}_dict2.json(딕셔너리 그대로), {code}_forecast.csv(표), {code}_score.csv")
+    print(f"저장(PI_module/output/{code}/): {code}_dict1.json, {code}_dict2.json(딕셔너리 그대로), {code}_forecast.csv(표), {code}_score.csv")
