@@ -2,6 +2,40 @@
 
 시계열 CSV 한 개를 넣으면 모델을 고르고, 첫 origin부터 모든 origin의 **예측 분위수(딕셔너리 1)** 와 **통합성적표(딕셔너리 2)** 를 만들어 줍니다. 이 폴더 하나만 있으면 실행됩니다(모델 선정 엔진을 복사해서 같이 넣어 두었습니다).
 
+## 폴더
+
+```
+PI_module/
+├─ PI.py          실행 파일(명령줄과 함수 겸용)
+├─ PI.ipynb       셀 단위 노트북([1] 데이터 → [2] 첫 origin 날짜 → [3] 모델 선정 → [4] 딕셔너리 1 → [5] 딕셔너리 2 → [저장])
+├─ selection.py   모델 선정 엔진 (프로젝트의 model_selection/selection.py 복사본)
+├─ ts_models.py   AR 단독, GARCH, SV 모델 구현 (model_selection/ts_models.py 복사본)
+├─ test_PI.py     오류·결과 검사 (python test_PI.py)
+├─ README.md / README.ipynb   설명서(같은 내용, 노트북은 보기 편하게)
+├─ data/          입력 CSV
+├─ cache/         계산 캐시 (실행하면 생김)
+└─ output/        결과 (변수별 폴더, JSON, CSV)
+```
+
+**파일의 역할과 호출 순서**
+
+```
+PI.py / PI.ipynb  ──▶  selection.py  ──▶  ts_models.py
+(입력·검사·저장)       (백테스트, 모델 선정)   (모델별 예측값·표준편차 계산)
+```
+
+| 파일 | 하는 일 | 결과를 내는가 |
+|---|---|---|
+| `PI.py`, `PI.ipynb` | 데이터를 읽고 검사하고, 선정된 모델로 딕셔너리 1, 2를 만들어 `output/`에 저장합니다. **사용자는 이 둘 중 하나만 실행합니다.** | 최종 결과(`output/`) |
+| `selection.py` | 모든 조합(모델 3종 × (d, D) × 스케일 × 구간 방식)을 origin마다 백테스트하고, 오차 풀을 쌓고, 분위수와 점수를 계산해 최적 모델을 고릅니다. | 점수표와 선정 결과 |
+| `ts_models.py` | 훈련 데이터 하나를 받아 모델 하나(AR 단독, GARCH(1,1), SV)의 1~4분기 앞 예측값과 표준편차를 계산합니다. 차분과 되돌리기, AR 차수 결정도 여기서 합니다. | 예측값과 표준편차 (중간 계산) |
+
+- `selection.py`와 `ts_models.py`는 직접 실행하지 않고 다른 파일이 불러 씁니다.
+- 선정 규칙(CRPS ±10%, 커버리지 90%)과 리샘플링은 `selection.py`에, 개별 모델 계산은 `ts_models.py`에 있습니다.
+
+- 이 폴더만 통째로 옮겨도 실행됩니다. 프로젝트의 다른 폴더는 필요 없습니다.
+- `selection.py`와 `ts_models.py`는 프로젝트의 `model_selection/`에서 **복사한 것**이라, 한쪽을 고쳐도 다른 쪽에는 자동으로 반영되지 않습니다. 복사본에서 바뀐 부분은 `selection.py`의 import 한 줄(`from ts_models import ...`)과 캐시 위치(`PI_module/cache/`)뿐입니다.
+
 ## 실행
 
 PI_module 폴더에서 실행합니다.
@@ -226,37 +260,3 @@ CSV ─▶ ① 입력 읽기 ─▶ ② 첫 origin 정하기 ─▶ ③ 모든 �
 - 모델 선정과 성적 평가가 같은 구간(첫 origin 이후)이라 점수가 다소 낙관적일 수 있습니다.
 - horizon은 h=1~4로 고정입니다.
 - 필요한 패키지: numpy, pandas, scipy, statsmodels, arch, pmdarima, properscoring (프로젝트 환경과 같음)
-
-## 폴더
-
-```
-PI_module/
-├─ PI.py          실행 파일(명령줄과 함수 겸용)
-├─ PI.ipynb       셀 단위 노트북([1] 데이터 → [2] 첫 origin 날짜 → [3] 모델 선정 → [4] 딕셔너리 1 → [5] 딕셔너리 2 → [저장])
-├─ selection.py   모델 선정 엔진 (프로젝트의 model_selection/selection.py 복사본)
-├─ ts_models.py   AR 단독, GARCH, SV 모델 구현 (model_selection/ts_models.py 복사본)
-├─ test_PI.py     오류·결과 검사 (python test_PI.py)
-├─ README.md / README.ipynb   설명서(같은 내용, 노트북은 보기 편하게)
-├─ data/          입력 CSV
-├─ cache/         계산 캐시 (실행하면 생김)
-└─ output/        결과 (변수별 폴더, JSON, CSV)
-```
-
-**파일의 역할과 호출 순서**
-
-```
-PI.py / PI.ipynb  ──▶  selection.py  ──▶  ts_models.py
-(입력·검사·저장)       (백테스트, 모델 선정)   (모델별 예측값·표준편차 계산)
-```
-
-| 파일 | 하는 일 | 결과를 내는가 |
-|---|---|---|
-| `PI.py`, `PI.ipynb` | 데이터를 읽고 검사하고, 선정된 모델로 딕셔너리 1, 2를 만들어 `output/`에 저장합니다. **사용자는 이 둘 중 하나만 실행합니다.** | 최종 결과(`output/`) |
-| `selection.py` | 모든 조합(모델 3종 × (d, D) × 스케일 × 구간 방식)을 origin마다 백테스트하고, 오차 풀을 쌓고, 분위수와 점수를 계산해 최적 모델을 고릅니다. | 점수표와 선정 결과 |
-| `ts_models.py` | 훈련 데이터 하나를 받아 모델 하나(AR 단독, GARCH(1,1), SV)의 1~4분기 앞 예측값과 표준편차를 계산합니다. 차분과 되돌리기, AR 차수 결정도 여기서 합니다. | 예측값과 표준편차 (중간 계산) |
-
-- `selection.py`와 `ts_models.py`는 직접 실행하지 않고 다른 파일이 불러 씁니다.
-- 선정 규칙(CRPS ±10%, 커버리지 90%)과 리샘플링은 `selection.py`에, 개별 모델 계산은 `ts_models.py`에 있습니다.
-
-- 이 폴더만 통째로 옮겨도 실행됩니다. 프로젝트의 다른 폴더는 필요 없습니다.
-- `selection.py`와 `ts_models.py`는 프로젝트의 `model_selection/`에서 **복사한 것**이라, 한쪽을 고쳐도 다른 쪽에는 자동으로 반영되지 않습니다. 복사본에서 바뀐 부분은 `selection.py`의 import 한 줄(`from ts_models import ...`)과 캐시 위치(`PI_module/cache/`)뿐입니다.
