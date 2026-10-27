@@ -20,10 +20,10 @@ python PI.py gold_yoy '2024-01-01'
 딕셔너리 1: origin 25개 (2019-Q4 ~ 2025-Q4), 값은 9 x 4 배열 ... 첫 origin 2019-Q4:
 {'2019-Q4': [[-151.52, -192.44, ...], ...]}
 딕셔너리 2: {'mse': 1.5448, 'crps': 0.7453, 'coverage': 82.1429}
-저장(PI_module/output/X1_l1/): X1_l1_dict1.json, ..._dict2.json, ..._forecast.csv, ..._score.csv
+저장(PI_module/output/X1_l1/): X1_l1_forecast.json, ..._score.json, ..._forecast.csv, ..._score.csv
 ```
 
-화면에는 딕셔너리 2 전체와 딕셔너리 1의 첫 origin만 나오고, 딕셔너리 1 전체는 `*_dict1.json`에 있습니다.
+화면에는 딕셔너리 2 전체와 딕셔너리 1의 첫 origin만 나오고, 딕셔너리 1 전체는 `*_forecast.json`에 있습니다.
 
 ## 입력
 
@@ -119,8 +119,8 @@ d1["2018-Q4"]       # 2018-Q4까지의 데이터로 만든 예측, h1은 2019-Q1
 
 | 파일 | 내용 |
 |---|---|
-| `<이름>_dict1.json` | 딕셔너리 1 그대로. `{"2018-Q4": [[h1~h4 5% 분위수], …9줄], …}` |
-| `<이름>_dict2.json` | 딕셔너리 2 그대로. `{"mse": …, "crps": …, "coverage": …}` |
+| `<이름>_forecast.json` | 딕셔너리 1(예측 분위수) 그대로. `{"2018-Q4": [[h1~h4 5% 분위수], …9줄], …}` |
+| `<이름>_score.json` | 딕셔너리 2(통합성적표) 그대로. `{"mse": …, "crps": …, "coverage": …}` |
 | `<이름>_forecast.csv` | 모든 origin의 예측 표. 열: `origin, h, 예측 분기, p5 ~ p95` (딕셔너리 1을 그대로 펼친 표) |
 | `<이름>_score.csv` | `mse, crps, coverage` |
 
