@@ -45,7 +45,7 @@ def check_outputs(name, date, source, d1, d2):
     sc = f[f["actual"].notna() & (f["origin"] <= fmt(q[n - 5]))]  # 4분기 정답이 모두 있는 origin
     cov = float(((sc["actual"] >= sc["p5"]) & (sc["actual"] <= sc["p95"])).mean() * 100)
     ok &= abs(cov - d2["coverage"]) < 1e-6                     # 딕셔너리 1의 5~95% 구간으로 다시 센 커버리지가 딕셔너리 2와 같다
-    ok &= all(np.isfinite(v) for v in d2.values()) and d2["mse"] > 0 and d2["crps"] > 0 and 0 <= d2["coverage"] <= 100
+    ok &= all(np.isfinite(v) for v in d2.values()) and d2["mae"] > 0 and d2["mse"] > 0 and d2["crps"] > 0 and 0 <= d2["coverage"] <= 100
     record("정상", name, bool(ok), f"origin {len(keys)}개, 채점 origin {len(sc) // 4}개, coverage {d2['coverage']:.1f}%")
     return ok
 

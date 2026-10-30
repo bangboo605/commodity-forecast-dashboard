@@ -126,6 +126,7 @@ def _normalize(res, y):
     sd = y.std()                                              # 점수 정규화 단위: 현재 데이터의 표준편차
     res = res.copy()
     res["crps"], res["MSE"], res["폭"] = res["crps_raw"] / sd, res["mse_raw"] / sd ** 2, res["폭_raw"] / sd
+    res["MAE"] = (res["실제"] - res["중앙값"]).abs() / sd
     return res
 
 
@@ -153,9 +154,9 @@ def run_grid(cfg, use_cache=True, data=None):
 
 
 def table(res):
-    """조합별 CRPS, MSE, 커버리지, 폭 (h 평균 -> origin 평균). 계산이 안 된 값은 inf로 두어 평균이 inf가 된다."""
+    """조합별 CRPS, MSE, MAE, 커버리지, 폭 (h 평균 -> origin 평균). 계산이 안 된 값은 inf로 두어 평균이 inf가 된다."""
     res = res[res["채점"]]                                         # 4개 분기 정답이 모두 있는 origin만 채점한다(12시리즈와 같음)
-    per = res.fillna({"crps": np.inf, "MSE": np.inf, "폭": np.inf}).groupby(KEY + ["origin"])[["crps", "MSE", "적중", "폭"]].mean(skipna=False)
+    per = res.fillna({"crps": np.inf, "MSE": np.inf, "MAE": np.inf, "폭": np.inf}).groupby(KEY + ["origin"])[["crps", "MSE", "MAE", "적중", "폭"]].mean(skipna=False)
     return per.groupby(KEY).mean(skipna=False).rename(columns={"crps": "CRPS", "적중": "커버리지(%)"})
 
 

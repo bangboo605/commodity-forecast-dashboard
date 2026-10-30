@@ -10,7 +10,7 @@
   CRPS 1등의 +-10% 이내 중 커버리지가 90%에 가장 가까운 조합을 고른다.
 - d1: {origin의 마지막 분기('2018-Q4'): 9 x 4 배열}  행은 5, 10, 20, 30, 50, 70, 80, 90, 95% 분위수, 열은 h=1~4(원래 단위).
       데이터 끝 이후 4분기를 예측하는 마지막 origin까지 모두 들어 있다.
-- d2: {'mse', 'crps', 'coverage'}  정답이 4분기 모두 있는 origin의 평균. mse와 crps는 노트북과 같이 전체 표준편차로 정규화한 값, coverage는 90% 구간 적중률(%).
+- d2: {'mae', 'mse', 'crps', 'coverage'}  정답이 4분기 모두 있는 origin의 평균. mae, mse, crps는 전체 표준편차로 정규화한 값(mae는 |실제 − 점예측| ÷ 표준편차, mse는 그 제곱), coverage는 90% 구간 적중률(%).
 """
 import json
 import sys
@@ -119,9 +119,9 @@ def forecast_dict(p, sel):
 
 
 def score_dict(sel):
-    """[5] 통합성적표 -> 딕셔너리 2 {'mse', 'crps', 'coverage'} (선정 조합의 평균, 정규화 단위)."""
+    """[5] 통합성적표 -> 딕셔너리 2 {'mae', 'mse', 'crps', 'coverage'} (선정 조합의 평균, 정규화 단위)."""
     t = sel["표"].loc[sel["선정"]]
-    return {"mse": float(t["MSE"]), "crps": float(t["CRPS"]), "coverage": float(t["커버리지(%)"])}
+    return {"mae": float(t["MAE"]), "mse": float(t["MSE"]), "crps": float(t["CRPS"]), "coverage": float(t["커버리지(%)"])}
 
 
 def run_pi(source, first_insample_end_date, name="series", verbose=True):
